@@ -5,11 +5,12 @@ import java.util.logging.*;
 
 public class SQLDatabaseManager {
 
-    private static final Logger logger = Logger.getLogger(SQLDatabaseManager.class.getName());
+    private final Logger logger = Logger.getLogger(SQLDatabaseManager.class.getName());
 
     private final String DB_FILE = "sample.db";
     private final String URL = "jdbc:sqlite:" + DB_FILE;
 
+    // A way to call Methods outside methods; very useful for configuration of properties
     {
         configureLogger();
     }
@@ -34,10 +35,10 @@ public class SQLDatabaseManager {
 
             // Write into the Console as: e.g. [INFORMATION] Connection was established.
             @Override
-            public String format(final LogRecord record) {
+            public String format(final LogRecord logRecord) {
                 return String.format("[%s] %s%n",
-                        record.getLevel().getLocalizedName(),
-                        record.getMessage());
+                        logRecord.getLevel().getLocalizedName(),
+                        logRecord.getMessage());
             }
         });
 
@@ -74,7 +75,7 @@ public class SQLDatabaseManager {
 
     }
 
-    private void resetUsersTable(Connection conn) throws SQLException {
+    private void resetUsersTable(Connection connection) throws SQLException {
 
         final String SQL_Statement = """
         DROP TABLE IF EXISTS users;
@@ -87,7 +88,7 @@ public class SQLDatabaseManager {
         INSERT INTO users (name, email) VALUES ('Another User', 'another@example.com');
         """;
 
-        try (Statement statement = conn.createStatement()) {
+        try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(SQL_Statement);
         }
     }
