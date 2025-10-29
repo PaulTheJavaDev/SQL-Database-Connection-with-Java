@@ -3,12 +3,14 @@ package de.pls.home.JDBC;
 import java.sql.*;
 import java.util.logging.*;
 
+import static de.pls.home.utils.SQLUtils.handleSQLError;
+
 public class SQLDatabaseManager {
 
     private final Logger logger = Logger.getLogger(SQLDatabaseManager.class.getName());
 
-    private final String DB_FILE = "sample.db";
-    private final String URL = "jdbc:sqlite:" + DB_FILE;
+    final String DB_FILE = "sample.db";
+    final String URL = "jdbc:sqlite:" + DB_FILE;
 
     // A way to call Methods outside methods; very useful for configuration of properties
     {
@@ -35,23 +37,15 @@ public class SQLDatabaseManager {
 
             // Write into the Console as: e.g. [INFORMATION] Connection was established.
             @Override
-            public String format(final LogRecord logRecord) {
+            public String format(final LogRecord recordOfTheLog) {
                 return String.format("[%s] %s%n",
-                        logRecord.getLevel().getLocalizedName(),
-                        logRecord.getMessage());
+                        recordOfTheLog.getLevel().getLocalizedName(),
+                        recordOfTheLog.getMessage());
             }
         });
 
         rootLogger.addHandler(handler);
         rootLogger.setLevel(Level.INFO);
-    }
-
-    /**
-     * Entry point for demonstration.
-     */
-    public static void main(String[] args) {
-        SQLDatabaseManager manager = new SQLDatabaseManager();
-        manager.runDemo();
     }
 
     /**
@@ -150,40 +144,6 @@ public class SQLDatabaseManager {
             logger.severe(handleSQLError(sqlException.getMessage()));
 
         }
-    }
-
-    /**
-     * Custom SQL-Error Handler
-     * @param errorMessage SQL Statement-Error to check for the proper custom Error Message
-     * @return Custom Error Message
-     */
-    private String handleSQLError(String errorMessage) {
-
-        errorMessage = errorMessage.toLowerCase();
-
-        String returnValue;
-
-        final String nullErrorMessage = "A NOT NULL constraint failed".toLowerCase();
-        final String uniqueFailingErrorMessage = "UNIQUE constraint failed".toLowerCase();
-
-        if (errorMessage.contains(nullErrorMessage)) {
-            returnValue = "SQL Statement failed due to an Argument being NULL";
-        } else if (errorMessage.contains(uniqueFailingErrorMessage)) {
-            returnValue = "SQL Statement failed due to an Argument, which is set to UNIQUE, already being in the database.";
-        } else {
-            returnValue = "SQL Statement failed: " + errorMessage;
-        }
-
-        return returnValue;
-
-    }
-
-    @SuppressWarnings("unused")
-    private String getMetaData() {
-
-        return "Database file:\t" + DB_FILE +
-                          "\nUrl:\t" + URL;
-
     }
 
 }
