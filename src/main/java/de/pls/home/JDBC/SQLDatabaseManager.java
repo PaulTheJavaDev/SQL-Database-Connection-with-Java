@@ -15,6 +15,12 @@ public class SQLDatabaseManager {
 
     private final Logger logger = Logger.getLogger(SQLDatabaseManager.class.getName());
 
+    private final int EXIT = 0;
+    private final int UPDATE = 1;
+    private final int DELETE = 2;
+    private final int SEARCH_BY = 3;
+    private final int COUNT_ALL = 4;
+
     {
         configureLogger();
     }
@@ -24,16 +30,18 @@ public class SQLDatabaseManager {
      * Removes the default timestamp/class info and shows only the message.
      */
     private void configureLogger() {
+        Logger rootLogger = Logger.getLogger("");
+        Handler[] handlers = rootLogger.getHandlers();
 
         // Remove default handlers (so we can apply our own format)
-        for (Handler handler : logger.getHandlers()) {
-            logger.removeHandler(handler);
+        for (Handler handler : handlers) {
+            rootLogger.removeHandler(handler);
         }
 
         // Create a new console handler with a simple format
-        ConsoleHandler consoleHandler = new ConsoleHandler();
-        consoleHandler.setFormatter(new Formatter() {
-            // Write into the Console as: e.g. [INFORMATION] Connection was established.
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setFormatter(new Formatter() {
+            // Write into the console as: e.g. [INFORMATION] Connection was established.
             @Override
             public String format(final LogRecord recordOfTheLog) {
                 return String.format("[%s] %s%n",
@@ -42,10 +50,10 @@ public class SQLDatabaseManager {
             }
         });
 
-        logger.addHandler(consoleHandler);
-        logger.setUseParentHandlers(false);
-        logger.setLevel(Level.INFO);
+        rootLogger.addHandler(handler);
+        rootLogger.setLevel(Level.INFO);
     }
+
 
     /**
      * Demonstrates connecting to the database, listing users, and inserting a new one.
@@ -71,13 +79,7 @@ public class SQLDatabaseManager {
                 logger.info("----------------------------------");
                 logger.info("Choose an option:");
 
-                int chosenOption;
-                try {
-                    chosenOption = Integer.parseInt(scanner.next().trim());
-                } catch (NumberFormatException _) {
-                    logger.warning("Invalid input. Please enter a number.");
-                    continue;
-                }
+                int chosenOption = Integer.parseInt(scanner.next().trim());
 
                 handleMenuOption(
                         chosenOption,
@@ -103,12 +105,12 @@ public class SQLDatabaseManager {
 
         switch (option) {
 
-            case 0:
+            case EXIT:
                 logger.info("Exiting program..");
                 programIsRunning = false;
                 break;
 
-            case 1:
+            case UPDATE:
                 try {
                     logger.info("Enter user ID to update:");
                     int id = Integer.parseInt(scanner.next().trim());
@@ -126,7 +128,7 @@ public class SQLDatabaseManager {
                 }
                 break;
 
-            case 2:
+            case DELETE:
                 try {
                     logger.info("Enter user ID to delete:");
                     int id = Integer.parseInt(scanner.next().trim());
@@ -136,13 +138,13 @@ public class SQLDatabaseManager {
                 }
                 break;
 
-            case 3:
+            case SEARCH_BY:
                 logger.info("Enter name to search:");
                 String searchTerm = scanner.next().trim();
                 userUtils.searchUserByName(connection, searchTerm);
                 break;
 
-            case 4:
+            case COUNT_ALL:
                 int count = userUtils.getUserCount(connection);
                 logger.info("Total users in database: " + count);
                 break;
