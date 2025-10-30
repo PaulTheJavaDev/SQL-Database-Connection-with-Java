@@ -31,7 +31,6 @@ public class SQLUtils {
 
     }
 
-    @SuppressWarnings("unused")
     public static void resetUsersTable(Connection connection) throws SQLException {
 
         try (Statement statement = connection.createStatement()) {
@@ -46,8 +45,7 @@ public class SQLUtils {
      * @param connection active SQL connection
      * @throws SQLException if any SQL operation fails
      */
-    @SuppressWarnings("unused")
-    private void listUsers(
+    public static void listUsers(
             final Connection connection,
             final Logger logger
     ) throws SQLException {
@@ -77,8 +75,7 @@ public class SQLUtils {
      * @param name       user name
      * @param email      user email
      */
-    @SuppressWarnings("unused")
-    public static void addUsrIntoDatabase(
+    public static void addUserIntoDatabase(
             final Connection connection,
             final String name,
             final String email,

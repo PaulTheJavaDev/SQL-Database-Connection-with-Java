@@ -1,14 +1,18 @@
 package de.pls.home.JDBC;
 
+import de.pls.home.utils.MenuOptionUtils;
 import de.pls.home.utils.Settings;
 import de.pls.home.utils.UserUtils;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Scanner;
 import java.util.logging.*;
 
 import static de.pls.home.utils.SQLUtils.handleSQLError;
 
+@SuppressWarnings("all")
 public class SQLDatabaseManager {
 
     private boolean programIsRunning = false;
@@ -17,9 +21,14 @@ public class SQLDatabaseManager {
 
     private final int EXIT = 0;
     private final int UPDATE = 1;
-    private final int DELETE = 2;
+    private final int DELETE_USER = 2;
     private final int SEARCH_BY = 3;
     private final int COUNT_ALL = 4;
+
+    private final int RESET_DATABASE = 5;
+    private final int LIST_ALL_USERS = 6;
+    private final int ADD_USER = 7;
+
 
     {
         configureLogger();
@@ -79,7 +88,14 @@ public class SQLDatabaseManager {
                 logger.info("----------------------------------");
                 logger.info("Choose an option:");
 
-                int chosenOption = Integer.parseInt(scanner.next().trim());
+                // Not initialising cuz if we get false Input, we are continueing anyways
+                int chosenOption;
+                try {
+                    chosenOption = Integer.parseInt(scanner.nextLine().trim());
+                } catch (NumberFormatException e) {
+                    logger.warning("Invalid input. Please enter a number.");
+                    continue;
+                }
 
                 handleMenuOption(
                         chosenOption,
@@ -99,61 +115,80 @@ public class SQLDatabaseManager {
             final int option,
             final Scanner scanner,
             final Connection connection,
-            final UserUtils userUtils
-    )
-    {
+            final UserUtils users
+    ) {
+
+        MenuOptionUtils menuOptionUtils = new MenuOptionUtils();
 
         switch (option) {
 
-            case EXIT:
+            case EXIT -> {
                 logger.info("Exiting program..");
                 programIsRunning = false;
-                break;
+            }
 
-            case UPDATE:
-                try {
-                    logger.info("Enter user ID to update:");
-                    int id = Integer.parseInt(scanner.next().trim());
+            case UPDATE -> {
 
-                    logger.info("Enter new name:");
-                    String name = scanner.next();
+                menuOptionUtils.updateUser(
+                        connection,
+                        scanner,
+                        logger,
+                        users
+                );
 
-                    scanner.nextLine();
+            }
 
-                    logger.info("Enter new email:");
-                    String email = scanner.nextLine().trim();
-                    userUtils.updateUser(connection, id, name, email);
-                } catch (Exception e) {
-                    logger.severe("Failed to update user: " + e.getMessage());
-                }
-                break;
+            case DELETE_USER -> {
 
-            case DELETE:
-                try {
-                    logger.info("Enter user ID to delete:");
-                    int id = Integer.parseInt(scanner.next().trim());
-                    userUtils.deleteUser(connection, id);
-                } catch (Exception e) {
-                    logger.severe("Failed to delete user: " + e.getMessage());
-                }
-                break;
+                menuOptionUtils.deleteUser(
+                        connection,
+                        scanner,
+                        logger,
+                        users
+                );
 
-            case SEARCH_BY:
+            }
+
+            case SEARCH_BY -> {
                 logger.info("Enter name to search:");
-                String searchTerm = scanner.next().trim();
-                userUtils.searchUserByName(connection, searchTerm);
-                break;
+                users.searchUserByName(connection, scanner.nextLine().trim());
+            }
 
-            case COUNT_ALL:
-                int count = userUtils.getUserCount(connection);
+            case COUNT_ALL -> {
+                int count = users.getUserCount(connection);
                 logger.info("Total users in database: " + count);
-                break;
+            }
 
-            default:
-                logger.warning("Invalid option. Try again.");
-                break;
+            case RESET_DATABASE -> {
+
+                menuOptionUtils.deleteDatabase(
+                        connection,
+                        scanner,
+                        logger
+                );
+
+            }
+
+            case LIST_ALL_USERS -> {
+
+                menuOptionUtils.listAllUsers(
+                        connection,
+                        logger
+                );
+
+            }
+
+            case ADD_USER -> {
+
+                menuOptionUtils.addUser(
+                        connection,
+                        scanner,
+                        logger
+                );
+
+            }
+
+            default -> logger.warning("Invalid option. Try again.");
         }
-
     }
-
 }
