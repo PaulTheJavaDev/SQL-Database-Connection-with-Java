@@ -1,18 +1,20 @@
 package de.pls.home.JDBC;
 
+import de.pls.home.utils.Settings;
+import de.pls.home.utils.UserUtils;
+
 import java.sql.*;
+import java.util.Scanner;
 import java.util.logging.*;
 
 import static de.pls.home.utils.SQLUtils.handleSQLError;
 
 public class SQLDatabaseManager {
 
+    private boolean programIsRunning = false;
+
     private final Logger logger = Logger.getLogger(SQLDatabaseManager.class.getName());
 
-    final String DB_FILE = "sample.db";
-    final String URL = "jdbc:sqlite:" + DB_FILE;
-
-    // A way to call Methods outside methods; very useful for configuration of properties
     {
         configureLogger();
     }
@@ -23,18 +25,14 @@ public class SQLDatabaseManager {
      */
     private void configureLogger() {
 
-        Logger rootLogger = Logger.getLogger("");
-        Handler[] handlers = rootLogger.getHandlers();
-
         // Remove default handlers (so we can apply our own format)
-        for (Handler handler : handlers) {
-            rootLogger.removeHandler(handler);
+        for (Handler handler : logger.getHandlers()) {
+            logger.removeHandler(handler);
         }
 
         // Create a new console handler with a simple format
-        ConsoleHandler handler = new ConsoleHandler();
-        handler.setFormatter(new Formatter() {
-
+        ConsoleHandler consoleHandler = new ConsoleHandler();
+        consoleHandler.setFormatter(new Formatter() {
             // Write into the Console as: e.g. [INFORMATION] Connection was established.
             @Override
             public String format(final LogRecord recordOfTheLog) {
@@ -44,8 +42,9 @@ public class SQLDatabaseManager {
             }
         });
 
-        rootLogger.addHandler(handler);
-        rootLogger.setLevel(Level.INFO);
+        logger.addHandler(consoleHandler);
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.INFO);
     }
 
     /**
@@ -53,97 +52,106 @@ public class SQLDatabaseManager {
      */
     public void runDemo() {
 
-        try (Connection connection = DriverManager.getConnection(URL)) {
+        try (Connection connection = DriverManager.getConnection(Settings.DatabaseSettings.URL);
+             Scanner scanner = new Scanner(System.in)) {
+
             logger.info("Connection to the database established successfully.");
+            programIsRunning = true;
 
-            resetUsersTable(connection);
+            UserUtils userUtils = new UserUtils();
 
-            addUser(connection, "Paul-Ludwig Simon", "paul-Ludwig.Simon@t-online.de");
-            addUser(connection, "Michael Müller", "m-müller@cutomMails.com");
+            while (programIsRunning) {
 
-            listUsers(connection);
+                logger.info("---------------Menu---------------");
+                logger.info("0 - Exit");
+                logger.info("1 - Update an existing User");
+                logger.info("2 - Delete an existing User");
+                logger.info("3 - Search by a user's name");
+                logger.info("4 - Get the Count of all users");
+                logger.info("----------------------------------");
+                logger.info("Choose an option:");
 
-        } catch (SQLException sqlException) {
-            logger.severe(handleSQLError(sqlException.getMessage()));
-        }
+                int chosenOption;
+                try {
+                    chosenOption = Integer.parseInt(scanner.next().trim());
+                } catch (NumberFormatException _) {
+                    logger.warning("Invalid input. Please enter a number.");
+                    continue;
+                }
 
-    }
-
-    private void resetUsersTable(Connection connection) throws SQLException {
-
-        final String SQL_Statement = """
-        DROP TABLE IF EXISTS users;
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE
-        );
-        INSERT INTO users (name, email) VALUES ('Anna Example', 'anna@example.com');
-        INSERT INTO users (name, email) VALUES ('Another User', 'another@example.com');
-        """;
-
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(SQL_Statement);
-        }
-    }
-
-    /**
-     * Retrieves and logs all users from the 'users' table.
-     *
-     * @param conn active SQL connection
-     * @throws SQLException if any SQL operation fails
-     */
-    private void listUsers(Connection conn) throws SQLException {
-
-        String SQL_Statement_Selection = "SELECT id, name, email FROM users";
-
-        try (Statement stmt = conn.createStatement();
-
-             ResultSet resultSet = stmt.executeQuery(SQL_Statement_Selection)) {
-
-            logger.info("Users in the database:");
-            while (resultSet.next()) {
-
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                String email = resultSet.getString("email");
-                logger.info(String.format("ID: %d | Name: %s | E-Mail: %s", id, name, email));
+                handleMenuOption(
+                        chosenOption,
+                        scanner,
+                        connection,
+                        userUtils
+                );
 
             }
 
+        } catch (SQLException sqlException) {
+            logger.severe(handleSQLError(sqlException.getMessage()));
         }
-
     }
 
-    /**
-     * Inserts a new user into the 'users' table.
-     *
-     * @param connection  active SQL connection
-     * @param name  user name
-     * @param email user email
-     */
-    @SuppressWarnings("unused")
-    private void addUser(
+    private void handleMenuOption(
+            final int option,
+            final Scanner scanner,
             final Connection connection,
-            final String name,
-            final String email
-    ) {
+            final UserUtils userUtils
+    )
+    {
 
-        final String insertSQL = "INSERT INTO users (name, email) VALUES (?, ?)";
+        switch (option) {
 
-        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSQL)) {
+            case 0:
+                logger.info("Exiting program..");
+                programIsRunning = false;
+                break;
 
-            preparedStatement.setString(1, name);
-            preparedStatement.setString(2, email);
+            case 1:
+                try {
+                    logger.info("Enter user ID to update:");
+                    int id = Integer.parseInt(scanner.next().trim());
 
-            int rows = preparedStatement.executeUpdate();
-            logger.info("User inserted. Rows affected: " + rows);
+                    logger.info("Enter new name:");
+                    String name = scanner.next();
 
-        } catch (SQLException sqlException) {
+                    scanner.nextLine();
 
-            logger.severe(handleSQLError(sqlException.getMessage()));
+                    logger.info("Enter new email:");
+                    String email = scanner.nextLine().trim();
+                    userUtils.updateUser(connection, id, name, email);
+                } catch (Exception e) {
+                    logger.severe("Failed to update user: " + e.getMessage());
+                }
+                break;
 
+            case 2:
+                try {
+                    logger.info("Enter user ID to delete:");
+                    int id = Integer.parseInt(scanner.next().trim());
+                    userUtils.deleteUser(connection, id);
+                } catch (Exception e) {
+                    logger.severe("Failed to delete user: " + e.getMessage());
+                }
+                break;
+
+            case 3:
+                logger.info("Enter name to search:");
+                String searchTerm = scanner.next().trim();
+                userUtils.searchUserByName(connection, searchTerm);
+                break;
+
+            case 4:
+                int count = userUtils.getUserCount(connection);
+                logger.info("Total users in database: " + count);
+                break;
+
+            default:
+                logger.warning("Invalid option. Try again.");
+                break;
         }
+
     }
 
 }

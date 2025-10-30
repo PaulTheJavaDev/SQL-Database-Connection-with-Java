@@ -19,7 +19,7 @@ public class UserUtils {
      * @param newName new name for the user
      * @param newEmail new email for the user
      */
-    private void updateUser(
+    public void updateUser(
             final Connection connection,
             final int id,
             final String newName,
@@ -55,7 +55,7 @@ public class UserUtils {
      * @param connection active SQL connection
      * @param id user's id to delete
      */
-    private void deleteUser(
+    public void deleteUser(
             final Connection connection,
             final int id
     ) {
@@ -80,7 +80,7 @@ public class UserUtils {
      * @param connection active SQL connection
      * @param searchTerm term to search for in user's names
      */
-    private void searchUserByName(
+    public void searchUserByName(
             final Connection connection,
             final String searchTerm
     ) {
@@ -124,7 +124,7 @@ public class UserUtils {
      * @param connection active SQL connection
      * @return number of users, or -1 if an error occurs
      */
-    private int getUserCount(
+    public int getUserCount(
             final Connection connection
     ) {
 
